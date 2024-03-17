@@ -5,6 +5,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from Spectra import DataHandler
+from Spectra import fitparams_textout
 matplotlib.use('Qt5Agg')
 
 
@@ -251,8 +252,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     begin = (self.data_handler.peaks[self.pk_num][0] - self.pk_vic)
                     end = self.data_handler.peaks[self.pk_num][0] + self.pk_vic+1
                 Rs, fitted_func_i = self.data_handler.fit(begin, end, self.cmbox_fittype.currentText())
-
-                self.fitout_label.setText('\n'.join(list(map(str, Rs))))
+                params = self.data_handler.fit_params[self.cmbox_fittype.currentText()]
+                self.fitout_label.setText(fitparams_textout(params, Rs, self.cmbox_fittype.currentText()))
                 self.drawGraph()
                 self.canvas.axes.plot(np.linspace(self.data_handler.lmds[begin],
                                                   self.data_handler.lmds[end-1],

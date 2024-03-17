@@ -8,6 +8,18 @@ def gauss(x, A_0, x_0, sigma):
     return (A_0/(sigma*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_0)/sigma)**2/2)
 
 
+def fitparams_textout(params, params_sigma, fit_type):
+    if fit_type == 'None':
+        return '(none)'
+    elif fit_type == 'Gaussian':
+        return 'f(x) = (A_0 / (sigma*sqrt(2*pi))) * exp(-((x-x_0)/sigma)^2/2)\n' \
+                'A_0 = ' + str(params[0]) + '; err = ' + str(params_sigma[0]) + ';\n' \
+                'x_0 = ' + str(params[1]) + '; err = ' + str(params_sigma[1]) + ';\n' \
+                'sigma = ' + str(params[2]) + '; err = ' + str(params_sigma[2]) + ';\n'
+    else:
+        return 'error'
+
+
 class DataHandler:
 
     def __init__(self, file, noise_level):  # noise level is in [0..1]
@@ -44,7 +56,8 @@ class DataHandler:
             pass
         elif fit_type == 'Gaussian':
             self.fit_params['Gaussian'], Rs = curve_fit(gauss, l_data, i_data,
-                                                        p0=[max(i_data), l_data[(end-begin)//2], 1])
+                                                        p0=[max(i_data), l_data[(end-begin)//2], 1],
+                                                        bounds=([0, -np.inf, 0], [np.inf, np.inf, np.inf]))
             Rs = np.sqrt(np.diag(Rs))
             fitted_func = gauss(np.linspace(l_data[0], l_data[-1], (end-begin)*self.fit_func_render_pt_density),
                                 self.fit_params['Gaussian'][0],
@@ -53,6 +66,7 @@ class DataHandler:
         elif fit_type == 'Poly-gaussian':
             pass
         return Rs, fitted_func
+
 
 def main():
     PK_NUM = 27
