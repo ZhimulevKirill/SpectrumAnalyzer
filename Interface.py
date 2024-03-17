@@ -1,5 +1,6 @@
 import sys
 import matplotlib
+import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
@@ -239,9 +240,13 @@ class MainWindow(QtWidgets.QMainWindow):
                     begin = (self.data_handler.peaks[self.pk_num][0] - self.pk_vic)
                     end = self.data_handler.peaks[self.pk_num][0] + self.pk_vic+1
                 Rs, fitted_func_i = self.data_handler.fit(begin, end, self.cmbox_fittype.currentText())
+
                 print(Rs)
                 self.drawGraph()
-                self.canvas.axes.plot([self.data_handler.lmds[i] for i in range(begin, end)], fitted_func_i, color='red')
+                self.canvas.axes.plot(np.linspace(self.data_handler.lmds[begin],
+                                                  self.data_handler.lmds[end-1],
+                                                  (end-begin)*self.data_handler.fit_func_render_pt_density),
+                                      fitted_func_i, color='red')
                 self.canvas.draw()
             except Exception as exc:
                 print(type(exc), exc.args)

@@ -18,6 +18,7 @@ class DataHandler:
         self.peaks = []
         self.fitting = [[], []]  # first array - lambdas, second - intensities
         self.fit_params = {'Gaussian': [], 'Poly-gaussian': []}
+        self.fit_func_render_pt_density = 5
         f = open(file, 'r')
         for line in f:
             self.size += 1
@@ -42,10 +43,10 @@ class DataHandler:
         if fit_type == 'None':
             pass
         elif fit_type == 'Gaussian':
-            parameters, Rs = curve_fit(gauss, l_data, i_data, p0=[max(i_data), l_data[(end-begin)//2], 1])
+            self.fit_params['Gaussian'], Rs = curve_fit(gauss, l_data, i_data,
+                                                        p0=[max(i_data), l_data[(end-begin)//2], 1])
             Rs = np.sqrt(np.diag(Rs))
-            self.fit_params['Gaussian'] = parameters
-            fitted_func = gauss(l_data,
+            fitted_func = gauss(np.linspace(l_data[begin], l_data[end-1], (end-begin)*self.fit_func_render_pt_density),
                                 self.fit_params['Gaussian'][0],
                                 self.fit_params['Gaussian'][1],
                                 self.fit_params['Gaussian'][2])
