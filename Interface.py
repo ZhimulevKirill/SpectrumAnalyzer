@@ -37,6 +37,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cmbox_preload = QtWidgets.QComboBox()
         self.cmbox_fittype = QtWidgets.QComboBox()
         self.cmbox_fitdata = QtWidgets.QComboBox()
+        self.fitout_label = QtWidgets.QLabel('(none)')
 
         self.pk_num = 0
         self.pk_vic = 1
@@ -141,10 +142,20 @@ class MainWindow(QtWidgets.QMainWindow):
         fit_button.clicked.connect(self.fittingWrapper)
         fit_button.setFixedHeight(35)
 
+        h_line3 = QtWidgets.QFrame()  # ANOTHER horizontal separation line for aesthetics
+        h_line3.setFrameShape(QtWidgets.QFrame.HLine)
+        h_line3.setFrameShadow(QtWidgets.QFrame.Sunken)
+
+        # self.fitout_label.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignBottom)  # todo
+        self.fitout_label.setWordWrap(True)
+        self.fitout_label.setFixedHeight(100)
+
         fitgenset_holder.setLayout(fitgenset_layout)
         fitting_general_layout.addWidget(fitting_label)
         fitting_general_layout.addWidget(fitgenset_holder)
         fitting_general_layout.addWidget(fit_button)
+        fitting_general_layout.addWidget(h_line3)
+        fitting_general_layout.addWidget(self.fitout_label)
         fitting_general_holder.setLayout(fitting_general_layout)
 
         button_layout.setContentsMargins(0, 0, 0, 0)
@@ -241,7 +252,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     end = self.data_handler.peaks[self.pk_num][0] + self.pk_vic+1
                 Rs, fitted_func_i = self.data_handler.fit(begin, end, self.cmbox_fittype.currentText())
 
-                print(Rs)
+                self.fitout_label.setText('\n'.join(list(map(str, Rs))))
                 self.drawGraph()
                 self.canvas.axes.plot(np.linspace(self.data_handler.lmds[begin],
                                                   self.data_handler.lmds[end-1],
