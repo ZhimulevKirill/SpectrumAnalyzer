@@ -46,7 +46,7 @@ class DataHandler:
             self.fit_params['Gaussian'], Rs = curve_fit(gauss, l_data, i_data,
                                                         p0=[max(i_data), l_data[(end-begin)//2], 1])
             Rs = np.sqrt(np.diag(Rs))
-            fitted_func = gauss(np.linspace(l_data[begin], l_data[end-1], (end-begin)*self.fit_func_render_pt_density),
+            fitted_func = gauss(np.linspace(l_data[0], l_data[-1], (end-begin)*self.fit_func_render_pt_density),
                                 self.fit_params['Gaussian'][0],
                                 self.fit_params['Gaussian'][1],
                                 self.fit_params['Gaussian'][2])
