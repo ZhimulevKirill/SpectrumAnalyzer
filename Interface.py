@@ -2,7 +2,7 @@ import sys
 import matplotlib
 import numpy as np
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QVBoxLayout, QGridLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QVBoxLayout, QGridLayout, QWidget, QDialog
 from PyQt5.QtWidgets import QSpinBox, QComboBox, QLabel, QPushButton, QFrame, QFileDialog
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
@@ -19,6 +19,53 @@ class MPLCanvas(FigureCanvasQTAgg):
         super(MPLCanvas, self).__init__(fig)
 
 
+class SettsDialog(QDialog):
+    def __init__(self, parent=None, **kwargs):
+        super(SettsDialog, self).__init__(parent, **kwargs)
+        general_layout = QGridLayout(self)
+        self.clicks = 0
+        self.parent = parent
+        self.sep_dict = {'(\\n)': '\n', '(\\t)': '\t', '(; + \\n)': ';\n', '(space)': ' ', '(;)': ';'}
+
+        line_sep_label = QLabel('Line separating symbol:')
+        self.cmbox_line_sep = QComboBox()
+        self.cmbox_line_sep.addItems(list(self.sep_dict.keys()))
+        self.cmbox_line_sep.setCurrentText('(\\n)')  # todo change to normal loading of settings
+
+        col_sep_label = QLabel('Column separating symbol:')
+        self.cmbox_col_sep = QComboBox()
+        self.cmbox_col_sep.addItems(list(self.sep_dict.keys()))
+        self.cmbox_col_sep.setCurrentText('(\\t)')  # todo same as above
+
+        decimal_point_label = QLabel('Decimal point symbol:')
+        self.cmbox_decimal = QComboBox()
+        self.cmbox_decimal.addItems(['.', ','])
+        self.cmbox_decimal.setCurrentText(self.parent.decimal_point)
+        self.exit_btn = QPushButton('Exit')
+        self.apply_btn = QPushButton('Apply')
+        general_layout.addWidget(line_sep_label, 0, 0)
+        general_layout.addWidget(self.cmbox_line_sep, 0, 1)
+        general_layout.addWidget(col_sep_label, 1, 0)
+        general_layout.addWidget(self.cmbox_col_sep, 1, 1)
+        general_layout.addWidget(decimal_point_label, 2, 0)
+        general_layout.addWidget(self.cmbox_decimal, 2, 1)
+        general_layout.addWidget(self.apply_btn, 3, 0)
+        general_layout.addWidget(self.exit_btn, 3, 1)
+        general_layout.setContentsMargins(10, 10, 10, 10)
+        general_layout.setColumnMinimumWidth(0, 100)
+        self.setWindowTitle('Import Settings')
+        self.exit_btn.clicked.connect(self.btn_exit)
+        self.apply_btn.clicked.connect(self.btn_apply)
+
+    def btn_exit(self):
+        self.close()
+
+    def btn_apply(self):
+        self.parent.catchSettings(self.sep_dict[self.cmbox_line_sep.currentText()],
+                                  self.sep_dict[self.cmbox_col_sep.currentText()],
+                                  self.cmbox_decimal.currentText())
+        self.close()
+
 class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
@@ -27,7 +74,11 @@ class MainWindow(QMainWindow):
         self.data_handler = None
         self.draw_lambda, self.draw_i = [], []
         self.file_name = ''
+        self.line_separator = '\n'
+        self.column_separator = '\t'
+        self.decimal_point = '.'
         self.filename_label = QLabel('(none)')
+
 
         self.spbox_pk_num = QSpinBox()
         self.spbox_pk_num.setMaximum(0)
@@ -77,9 +128,16 @@ class MainWindow(QMainWindow):
         self.cmbox_units.addItems(['nm', 'Hz', 's^-1', 'cm^-1'])
         self.cmbox_units.setCurrentIndex(0)
         self.cmbox_units.setFixedHeight(25)
+        self.cmbox_units.setFixedWidth(60)
+        self.cmbox_units.setToolTip('Functionality is not implemented, all data is being taken literally')
+        load_settings_button = QPushButton('Settings')
+        load_settings_button.setFixedHeight(25)
+        load_settings_button.setFixedWidth(60)
+        load_settings_button.clicked.connect(self.importSettingsWrapper)
         loadsets_layout.setContentsMargins(0, 0, 0, 0)
         loadsets_layout.addWidget(load_button)
         loadsets_layout.addWidget(self.cmbox_units)
+        loadsets_layout.addWidget(load_settings_button)
         loadsets_holder.setLayout(loadsets_layout)
         self.filename_label.setFixedHeight(25)
         loading_layout.addWidget(loadsets_holder)  # putting them onto one parent-widget
@@ -200,10 +258,25 @@ class MainWindow(QMainWindow):
             else:
                 pass
 
+    def importSettingsWrapper(self):
+        try:
+            dialog = SettsDialog(parent=self)
+            dialog.exec_()
+        except Exception as exc:
+            print(type(exc), exc.args)
+
+    def catchSettings(self, line_sep, column_sep, decimal_pt):
+        self.line_separator = line_sep
+        self.column_separator = column_sep
+        self.decimal_point = decimal_pt
+
     def importData(self):
         self.getFileName()
         try:
-            self.data_handler = DataHandler(self.file_name, 0.02)
+            self.data_handler = DataHandler(self.file_name, 0.02,
+                                            line_sep=self.line_separator,
+                                            col_sep=self.column_separator,
+                                            dec_pt=self.decimal_point)
             self.filename_label.setText(self.file_name)
             self.draw_lambda, self.draw_i = self.data_handler.lmds, self.data_handler.ints
             self.cmbox_preload.setCurrentText('All')

@@ -22,7 +22,7 @@ def fitparams_textout(params, params_sigma, fit_type):
 
 class DataHandler:
 
-    def __init__(self, file, noise_level):  # noise level is in [0..1]
+    def __init__(self, file, noise_level, line_sep='\n', col_sep='\t', dec_pt='.'):  # noise level is in [0..1]
         self.size = 0
         self.lmds = []
         self.ints = []
@@ -32,10 +32,12 @@ class DataHandler:
         self.fit_params = {'Gaussian': [], 'Poly-gaussian': []}
         self.fit_func_render_pt_density = 5
         f = open(file, 'r')
-        for line in f:
-            self.size += 1
-            self.lmds.append(float(line.split('\t')[0]))
-            self.ints.append(float(line.split('\t')[1]))
+        lines = f.read().split(line_sep)
+        self.size = len(lines)-1
+        for i in range(self.size):
+            lne = lines[i].replace(dec_pt, '.')
+            self.lmds.append(float(lne.split(col_sep)[0]))
+            self.ints.append(float(lne.split(col_sep)[1]))
         f.close()
         for i in range(1, self.size-1):
             if abs(self.ints[i]) > noise_level:
