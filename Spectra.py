@@ -12,10 +12,10 @@ def fitparams_textout(params, params_sigma, fit_type):
     if fit_type == 'None':
         return '(none)'
     elif fit_type == 'Gaussian':
-        return 'f(x) = (A_0 / (sigma*sqrt(2*pi))) * exp(-((x-x_0)/sigma)^2/2)\n' \
-                'A_0 = ' + str(params[0]) + '; err = ' + str(params_sigma[0]) + ';\n' \
-                'x_0 = ' + str(params[1]) + '; err = ' + str(params_sigma[1]) + ';\n' \
-                'sigma = ' + str(params[2]) + '; err = ' + str(params_sigma[2]) + ';\n'
+        return 'f(x) = (A_0 / (sigma*sqrt(2*pi))) * exp(-((x-x_0)/sigma)^2/2)\n\n' \
+                'A_0 = ' + str(params[0]) + ';\n\terr = ' + str(params_sigma[0]) + ';\n' \
+                'x_0 = ' + str(params[1]) + ';\n\terr = ' + str(params_sigma[1]) + ';\n' \
+                'sigma = ' + str(params[2]) + ';\n\terr = ' + str(params_sigma[2]) + ';\n'
     else:
         return 'error'
 

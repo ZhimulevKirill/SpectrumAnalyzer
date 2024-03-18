@@ -1,7 +1,9 @@
 import sys
 import matplotlib
 import numpy as np
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QVBoxLayout, QGridLayout, QWidget
+from PyQt5.QtWidgets import QSpinBox, QComboBox, QLabel, QPushButton, QFrame, QFileDialog
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from Spectra import DataHandler
@@ -17,7 +19,7 @@ class MPLCanvas(FigureCanvasQTAgg):
         super(MPLCanvas, self).__init__(fig)
 
 
-class MainWindow(QtWidgets.QMainWindow):
+class MainWindow(QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
@@ -25,20 +27,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.data_handler = None
         self.draw_lambda, self.draw_i = [], []
         self.file_name = ''
-        self.filename_label = QtWidgets.QLabel('(none)')
+        self.filename_label = QLabel('(none)')
 
-        self.spbox_pk_num = QtWidgets.QSpinBox()
+        self.spbox_pk_num = QSpinBox()
         self.spbox_pk_num.setMaximum(0)
         self.spbox_pk_num.setMinimum(0)
-        self.spbox_pk_vic = QtWidgets.QSpinBox()
+        self.spbox_pk_vic = QSpinBox()
         self.spbox_pk_vic.setMaximum(0)
         self.spbox_pk_vic.setMinimum(0)
 
-        self.cmbox_units = QtWidgets.QComboBox()
-        self.cmbox_preload = QtWidgets.QComboBox()
-        self.cmbox_fittype = QtWidgets.QComboBox()
-        self.cmbox_fitdata = QtWidgets.QComboBox()
-        self.fitout_label = QtWidgets.QLabel('(none)')
+        self.cmbox_units = QComboBox()
+        self.cmbox_preload = QComboBox()
+        self.cmbox_fittype = QComboBox()
+        self.cmbox_fitdata = QComboBox()
+        self.fitout_label = QLabel('(none)')
 
         self.pk_num = 0
         self.pk_vic = 1
@@ -47,29 +49,27 @@ class MainWindow(QtWidgets.QMainWindow):
         self.show()
 
     def initUI(self):
-        general_layout = QtWidgets.QHBoxLayout()
-        graph_layout = QtWidgets.QVBoxLayout()  # declaring these assholes-layouts
-        button_layout = QtWidgets.QVBoxLayout()
-        loading_layout = QtWidgets.QVBoxLayout()
-        loadsets_layout = QtWidgets.QHBoxLayout()
-        mode_layout = QtWidgets.QVBoxLayout()
-        uppershit_layout = QtWidgets.QHBoxLayout()
-        pk_vic_settings_layout = QtWidgets.QGridLayout()
-        fitting_general_layout = QtWidgets.QVBoxLayout()
-        fitgenset_layout = QtWidgets.QGridLayout()
+        general_layout = QHBoxLayout()
+        graph_layout = QVBoxLayout()  # declaring these assholes-layouts
+        button_layout = QVBoxLayout()
+        loading_layout = QVBoxLayout()
+        loadsets_layout = QHBoxLayout()
+        uppershit_layout = QHBoxLayout()
+        pk_vic_settings_layout = QGridLayout()
+        fitting_general_layout = QVBoxLayout()
+        fitgenset_layout = QGridLayout()
 
-        general_holder = QtWidgets.QWidget()
-        button_holder = QtWidgets.QWidget()
-        graph_holder = QtWidgets.QWidget()
-        loading_holder = QtWidgets.QWidget()  # declaring these parent assholes-widgets
-        loadsets_holder = QtWidgets.QWidget()
-        mode_cboxs_holder = QtWidgets.QFrame()
-        uppershit_holder = QtWidgets.QWidget()
-        pk_vic_settings_holder = QtWidgets.QWidget()
-        fitting_general_holder = QtWidgets.QWidget()
-        fitgenset_holder = QtWidgets.QWidget()
+        general_holder = QWidget()
+        button_holder = QWidget()
+        graph_holder = QWidget()
+        loading_holder = QWidget()  # declaring these parent assholes-widgets
+        loadsets_holder = QWidget()
+        uppershit_holder = QWidget()
+        pk_vic_settings_holder = QWidget()
+        fitting_general_holder = QWidget()
+        fitgenset_holder = QWidget()
 
-        load_button = QtWidgets.QPushButton('Import data from file', self)  # creating loading button and label
+        load_button = QPushButton('Import data from file', self)  # creating loading button and label
         load_button.setToolTip('Choose a .txt file from nearby directory')
         load_button.clicked.connect(self.importData)
         load_button.setFixedHeight(25)
@@ -90,13 +90,13 @@ class MainWindow(QtWidgets.QMainWindow):
         loading_holder.setFixedHeight(60)
         loading_holder.setMinimumWidth(500)
 
-        v_line = QtWidgets.QFrame()  # vertical separation line for aesthetics
-        v_line.setFrameShape(QtWidgets.QFrame.VLine)
-        v_line.setFrameShadow(QtWidgets.QFrame.Sunken)
+        v_line = QFrame()  # vertical separation line for aesthetics
+        v_line.setFrameShape(QFrame.VLine)
+        v_line.setFrameShadow(QFrame.Sunken)
 
         self.cmbox_preload.addItems(['None', 'All', 'Peak vicinity'])
 
-        draw_button = QtWidgets.QPushButton('Reload image', self)
+        draw_button = QPushButton('Reload image', self)
         draw_button.setToolTip('Draw preloaded data immediately, using settings below')
         draw_button.setFixedHeight(25)
         draw_button.clicked.connect(self.drawGraph)
@@ -107,16 +107,16 @@ class MainWindow(QtWidgets.QMainWindow):
         uppershit_holder.setLayout(uppershit_layout)
         uppershit_holder.setFixedHeight(30)
 
-        h_line1 = QtWidgets.QFrame()  # horizontal separation line for aesthetics
-        h_line1.setFrameShape(QtWidgets.QFrame.HLine)
-        h_line1.setFrameShadow(QtWidgets.QFrame.Sunken)
+        h_line1 = QFrame()  # horizontal separation line for aesthetics
+        h_line1.setFrameShape(QFrame.HLine)
+        h_line1.setFrameShadow(QFrame.Sunken)
 
-        h_line2 = QtWidgets.QFrame()  # YET ANOTHER horizontal separation line for aesthetics
-        h_line2.setFrameShape(QtWidgets.QFrame.HLine)
-        h_line2.setFrameShadow(QtWidgets.QFrame.Sunken)
+        h_line2 = QFrame()  # YET ANOTHER horizontal separation line for aesthetics
+        h_line2.setFrameShape(QFrame.HLine)
+        h_line2.setFrameShadow(QFrame.Sunken)
 
-        label_pk_num = QtWidgets.QLabel('Peak Number:')
-        label_vicinity_size = QtWidgets.QLabel('Points in vicinity:')
+        label_pk_num = QLabel('Peak Number:')
+        label_vicinity_size = QLabel('Points in vicinity:')
         self.spbox_pk_num.valueChanged.connect(self.getPeakNum)
         self.spbox_pk_vic.valueChanged.connect(self.getVicSize)
         pk_vic_settings_layout.setContentsMargins(0, 0, 0, 0)
@@ -126,9 +126,9 @@ class MainWindow(QtWidgets.QMainWindow):
         pk_vic_settings_layout.addWidget(self.spbox_pk_vic, 1, 1)
         pk_vic_settings_holder.setLayout(pk_vic_settings_layout)
 
-        fitting_label = QtWidgets.QLabel('Fitting settings')
-        fittype_label = QtWidgets.QLabel('Type of fitting function: ')
-        fitdata_label = QtWidgets.QLabel('Data used for fitting: ')
+        fitting_label = QLabel('Fitting settings')
+        fittype_label = QLabel('Type of fitting function: ')
+        fitdata_label = QLabel('Data used for fitting: ')
         self.cmbox_fittype.addItems(['None', 'Gaussian'])
         self.cmbox_fitdata.addItems(['None', 'All', 'Current peak'])
         self.cmbox_fittype.setCurrentIndex(0)
@@ -139,17 +139,17 @@ class MainWindow(QtWidgets.QMainWindow):
         fitgenset_layout.addWidget(fitdata_label, 1, 0)
         fitgenset_layout.addWidget(self.cmbox_fitdata, 1, 1)
 
-        fit_button = QtWidgets.QPushButton('Fit chosen curve')
+        fit_button = QPushButton('Fit chosen curve')
         fit_button.clicked.connect(self.fittingWrapper)
         fit_button.setFixedHeight(35)
 
-        h_line3 = QtWidgets.QFrame()  # ANOTHER horizontal separation line for aesthetics
-        h_line3.setFrameShape(QtWidgets.QFrame.HLine)
-        h_line3.setFrameShadow(QtWidgets.QFrame.Sunken)
+        h_line3 = QFrame()  # ANOTHER horizontal separation line for aesthetics
+        h_line3.setFrameShape(QFrame.HLine)
+        h_line3.setFrameShadow(QFrame.Sunken)
 
-        # self.fitout_label.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignBottom)  # todo
-        self.fitout_label.setWordWrap(True)
-        self.fitout_label.setFixedHeight(100)
+        # self.fitout_label.setWordWrap(True)
+        self.fitout_label.setFixedHeight(150)
+        self.fitout_label.setFixedWidth(400)
 
         fitgenset_holder.setLayout(fitgenset_layout)
         fitting_general_layout.addWidget(fitting_label)
@@ -179,13 +179,13 @@ class MainWindow(QtWidgets.QMainWindow):
         general_holder.setLayout(general_layout)
         self.setCentralWidget(general_holder)
         self.setWindowTitle('Small data acquisition program')
-        self.setWindowIcon(QtGui.QIcon('icon.png'))
+        self.setWindowIcon(QIcon('icon.png'))
 
     def getFileName(self):
-        options = QtWidgets.QFileDialog.Options()
-        options |= QtWidgets.QFileDialog.DontUseNativeDialog
-        self.file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Loading a .txt file', '',
-                                                                  'All Files (*);;TXT Files (*.txt)', options=options)
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        self.file_name, _ = QFileDialog.getOpenFileName(self, 'Loading a .txt file', '',
+                                                        'All Files (*);;TXT Files (*.txt)', options=options)
 
     def preloadChoice(self):
         if self.data_handler is None:
@@ -265,6 +265,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 if __name__ == '__main__':
-    app = QtWidgets.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     w = MainWindow()
     app.exec_()
