@@ -25,7 +25,7 @@ class SettsDialog(QDialog):
         general_layout = QGridLayout(self)
         self.clicks = 0
         self.parent = parent
-        self.sep_dict = {'(\\n)': '\n', '(\\t)': '\t', '(; + \\n)': ';\n', '(space)': ' ', '(;)': ';'}
+        self.sep_dict = {'(\\n)': '\n', '(\\t)': '\t', '(; + \\n)': ';\n', '(space)': ' ', '(;)': ';', '(,)': ','}
 
         line_sep_label = QLabel('Line separating symbol:')
         self.cmbox_line_sep = QComboBox()
@@ -92,6 +92,7 @@ class MainWindow(QMainWindow):
         self.cmbox_fittype = QComboBox()
         self.cmbox_fitdata = QComboBox()
         self.fitout_label = QLabel('(none)')
+        self.fitout_label.setStyleSheet("QLabel{font-size: 10pt;}")
 
         self.pk_num = 0
         self.pk_vic = 1
@@ -201,18 +202,23 @@ class MainWindow(QMainWindow):
         fit_button.clicked.connect(self.fittingWrapper)
         fit_button.setFixedHeight(35)
 
+        hw_func_button = QPushButton('Estimate HW function (WIP)')
+        hw_func_button.clicked.connect(self.hw_funcWrapper)
+        hw_func_button.setFixedHeight(20)
+
         h_line3 = QFrame()  # ANOTHER horizontal separation line for aesthetics
         h_line3.setFrameShape(QFrame.HLine)
         h_line3.setFrameShadow(QFrame.Sunken)
 
         # self.fitout_label.setWordWrap(True)
-        self.fitout_label.setFixedHeight(150)
+        self.fitout_label.setFixedHeight(200)
         self.fitout_label.setFixedWidth(400)
 
         fitgenset_holder.setLayout(fitgenset_layout)
         fitting_general_layout.addWidget(fitting_label)
         fitting_general_layout.addWidget(fitgenset_holder)
         fitting_general_layout.addWidget(fit_button)
+        fitting_general_layout.addWidget(hw_func_button)
         fitting_general_layout.addWidget(h_line3)
         fitting_general_layout.addWidget(self.fitout_label)
         fitting_general_holder.setLayout(fitting_general_layout)
@@ -273,7 +279,7 @@ class MainWindow(QMainWindow):
     def importData(self):
         self.getFileName()
         try:
-            self.data_handler = DataHandler(self.file_name, 0.02,
+            self.data_handler = DataHandler(self.file_name, 0.03,
                                             line_sep=self.line_separator,
                                             col_sep=self.column_separator,
                                             dec_pt=self.decimal_point)
@@ -332,6 +338,28 @@ class MainWindow(QMainWindow):
                                                   self.data_handler.lmds[end-1],
                                                   (end-begin)*self.data_handler.fit_func_render_pt_density),
                                       fitted_func_i, color='red')
+                self.canvas.draw()
+            except Exception as exc:
+                print(type(exc), exc.args)
+
+    def hw_funcWrapper(self):
+        fittype = self.cmbox_fittype.currentText()
+        print(fittype)
+        try:
+            params = self.data_handler.fit_params[fittype]
+        except Exception as exc:
+            print(type(exc), exc.args)
+            params = np.asarray([])
+        if len(params) != 0:
+            try:
+                begin, end = 0, 0
+                if self.cmbox_fitdata.currentText() == 'All':
+                    begin, end = 0, self.data_handler.size
+                elif self.cmbox_fitdata.currentText() == 'Current peak':
+                    begin = (self.data_handler.peaks[self.pk_num][0] - self.pk_vic)
+                    end = self.data_handler.peaks[self.pk_num][0] + self.pk_vic + 1
+                hw_func = self.data_handler.get_conv_func(begin, end, fit_type=fittype)
+                self.canvas.axes.plot([self.data_handler.lmds[i] for i in range(begin, end)], hw_func, color='green')
                 self.canvas.draw()
             except Exception as exc:
                 print(type(exc), exc.args)

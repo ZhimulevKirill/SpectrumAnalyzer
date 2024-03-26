@@ -1,6 +1,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
+from scipy.fft import fft, ifft
 import math
 
 
@@ -8,14 +9,22 @@ def gauss(x, A_0, x_0, sigma):
     return (A_0/(sigma*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_0)/sigma)**2/2)
 
 
-def fitparams_textout(params, params_sigma, fit_type):
+def double_gauss(x, A_1, A_2, x_1, x_2, s1, s2):
+    return (A_1/(s1*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_1)/s1)**2/2) + \
+           (A_2/(s2*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_2)/s2)**2/2)
+
+
+def fitparams_textout(params, params_sigma, fit_type):  # todo make print out a formula using LaTeX symbols
     if fit_type == 'None':
         return '(none)'
     elif fit_type == 'Gaussian':
-        return 'f(x) = (A_0 / (sigma*sqrt(2*pi))) * exp(-((x-x_0)/sigma)^2/2)\n\n' \
-                'A_0 = ' + str(params[0]) + ';\n\terr = ' + str(params_sigma[0]) + ';\n' \
-                'x_0 = ' + str(params[1]) + ';\n\terr = ' + str(params_sigma[1]) + ';\n' \
-                'sigma = ' + str(params[2]) + ';\n\terr = ' + str(params_sigma[2]) + ';\n'
+        return 'f(x) = A<sub>0</sub>/(\u03c3\u221a2\u03c0)\u22c5exp(-((x-x<sub>0</sub>)/\u03c3)<sup>2</sup>/2)<br>' + \
+            'A<sub>0</sub> = ' + '{:.3f}'.format(params[0]) + ';  err = ' + '{:.4f}'.format(params_sigma[0]) + \
+            ';<br>x<sub>0</sub> = ' + '{:.3f}'.format(params[1]) + ';  err = ' + '{:.4f}'.format(params_sigma[1]) + \
+            ';<br>\u03c3 = ' + '{:.3f}'.format(params[2]) + ';  err = ' + '{:.4f}'.format(params_sigma[2]) + \
+            ';<br>(HWHM = ' + '{:.3f}'.format(2*math.sqrt(2*math.log(2)) * params[2]) + ')'
+    elif fit_type == 'Double Gaussian':
+        return ''
     else:
         return 'error'
 
@@ -39,8 +48,10 @@ class DataHandler:
             self.lmds.append(float(lne.split(col_sep)[0]))
             self.ints.append(float(lne.split(col_sep)[1]))
         f.close()
+        noise = noise_level * max(self.ints)
+        # print(max(self.ints))
         for i in range(1, self.size-1):
-            if abs(self.ints[i]) > noise_level:
+            if abs(self.ints[i]) > noise:
                 if (self.ints[i] - self.ints[i-1] > 0) and (self.ints[i+1] - self.ints[i] < 0):
                     self.pk_count += 1
                     self.peaks.append((i, self.lmds[i], self.ints[i]))  # indexes for peaks are for internal navigation
@@ -68,6 +79,23 @@ class DataHandler:
         elif fit_type == 'Poly-gaussian':
             pass
         return Rs, fitted_func
+
+    def get_conv_func(self, begin, end, fit_type='Gaussian'):
+        l_data = np.asarray([self.lmds[i] for i in range(begin, end)])
+        i_data = np.asarray([self.ints[i] for i in range(begin, end)])
+        hw_func = np.asarray([])
+        if fit_type == 'None':
+            pass
+        elif fit_type == 'Gaussian':
+            fitted_func = gauss(l_data, self.fit_params['Gaussian'][0],
+                                        self.fit_params['Gaussian'][1],
+                                        self.fit_params['Gaussian'][2])
+            fourier_data = fft(i_data)
+            fourier_func = fft(fitted_func)
+            hw_func = np.asarray(ifft(np.divide(fourier_data, fourier_func)), float)
+        else:
+            pass
+        return hw_func
 
 
 def main():
