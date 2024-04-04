@@ -5,8 +5,8 @@ from scipy.fft import fft, ifft
 import math
 
 
-def gauss(x, A_0, x_0, sigma):
-    return (A_0/(sigma*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_0)/sigma)**2/2)
+def gauss(x, A_0, x_0, sigma, delta):
+    return np.add((A_0/(sigma*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_0)/sigma)**2/2), delta)
 
 
 def double_gauss(x, A_1, A_2, x_1, x_2, s1, s2):
@@ -18,11 +18,12 @@ def fitparams_textout(params, params_sigma, fit_type):  # todo make print out a 
     if fit_type == 'None':
         return '(none)'
     elif fit_type == 'Gaussian':
-        return 'f(x) = A<sub>0</sub>/(\u03c3\u221a2\u03c0)\u22c5exp(-((x-x<sub>0</sub>)/\u03c3)<sup>2</sup>/2)<br>' + \
+        return 'f(x) = \u03b4 + A<sub>0</sub>/(\u03c3\u221a2\u03c0)\u22c5exp(-((x-x<sub>0</sub>)/\u03c3)<sup>2</sup>/2)<br>' + \
             'A<sub>0</sub> = ' + '{:.3f}'.format(params[0]) + ';  err = ' + '{:.4f}'.format(params_sigma[0]) + \
             ';<br>x<sub>0</sub> = ' + '{:.3f}'.format(params[1]) + ';  err = ' + '{:.4f}'.format(params_sigma[1]) + \
             ';<br>\u03c3 = ' + '{:.3f}'.format(params[2]) + ';  err = ' + '{:.4f}'.format(params_sigma[2]) + \
-            ';<br>(HWHM = ' + '{:.3f}'.format(2*math.sqrt(2*math.log(2)) * params[2]) + ')'
+            ';<br>(HWHM = ' + '{:.3f}'.format(2*math.sqrt(2*math.log(2)) * params[2]) + ');' + \
+            '<br>\u03b4 = ' + '{:.3f}'.format(params[3]) + ';  err = ' + '{:.4f}'.format(params_sigma[3])
     elif fit_type == 'Double Gaussian':
         return ''
     else:
@@ -69,13 +70,14 @@ class DataHandler:
             pass
         elif fit_type == 'Gaussian':
             self.fit_params['Gaussian'], Rs = curve_fit(gauss, l_data, i_data,
-                                                        p0=[max(i_data), l_data[(end-begin)//2], 1],
-                                                        bounds=([0, -np.inf, 0], [np.inf, np.inf, np.inf]))
+                                                        p0=[max(i_data), l_data[(end-begin)//2], 1, i_data[0]],
+                                                        bounds=([0, -np.inf, 0, -np.inf], [np.inf, np.inf, np.inf, np.inf]))
             Rs = np.sqrt(np.diag(Rs))
             fitted_func = gauss(np.linspace(l_data[0], l_data[-1], (end-begin)*self.fit_func_render_pt_density),
                                 self.fit_params['Gaussian'][0],
                                 self.fit_params['Gaussian'][1],
-                                self.fit_params['Gaussian'][2])
+                                self.fit_params['Gaussian'][2],
+                                self.fit_params['Gaussian'][3])
         elif fit_type == 'Poly-gaussian':
             pass
         return Rs, fitted_func
@@ -89,7 +91,8 @@ class DataHandler:
         elif fit_type == 'Gaussian':
             fitted_func = gauss(l_data, self.fit_params['Gaussian'][0],
                                         self.fit_params['Gaussian'][1],
-                                        self.fit_params['Gaussian'][2])
+                                        self.fit_params['Gaussian'][2],
+                                        self.fit_params['Gaussian'][3])
             fourier_data = fft(i_data)
             fourier_func = fft(fitted_func)
             hw_func = np.asarray(ifft(np.divide(fourier_data, fourier_func)), float)
