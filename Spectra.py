@@ -14,6 +14,12 @@ def double_gauss(x, A_1, A_2, x_1, x_2, s1, s2):
            (A_2/(s2*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_2)/s2)**2/2)
 
 
+def triplet_gauss(x, A_1, x_1, s_1, A_2, x_2, s_2, A_3, x_3, s_3):  # todo add delta, as with regular gaussian
+    return (A_1/(s_1*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_1)/s_1)**2/2) + \
+           (A_2/(s_2*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_2)/s_2)**2/2) + \
+           (A_3/(s_3*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_3)/s_3)**2/2)
+
+
 def fitparams_textout(params, params_sigma, fit_type):  # todo make print out a formula using LaTeX symbols
     if fit_type == 'None':
         return '(none)'
@@ -26,6 +32,10 @@ def fitparams_textout(params, params_sigma, fit_type):  # todo make print out a 
             '<br>\u03b4 = ' + '{:.3f}'.format(params[3]) + ';  err = ' + '{:.4f}'.format(params_sigma[3])
     elif fit_type == 'Double Gaussian':
         return ''
+    elif fit_type == 'Triplet(gaussian)':
+        return 'A<sub>i</sub> = ' + '({:.3f}, {:.3f}, {:.3f})'.format(params[0], params[3], params[6]) + \
+               ';<br>x<sub>0</sub> = ' + '({:.3f}, {:.3f}, {:.3f})'.format(params[1], params[4], params[7]) + \
+               ';<br>\u03c3<sub>i</sub> = ' + '({:.3f}, {:.3f}, {:.3f})'.format(params[2], params[5], params[8])
     else:
         return 'error'
 
@@ -34,13 +44,15 @@ class DataHandler:
 
     def __init__(self, file, noise_level, line_sep='\n', col_sep='\t', dec_pt='.'):  # noise level is in [0..1]
         self.size = 0
-        self.lmds = []
+        self.lmds = []  # todo change everything to nympy-arrays for better performance
         self.ints = []
         self.pk_count = 0
         self.peaks = []
         self.fitting = [[], []]  # first array - lambdas, second - intensities
-        self.fit_params = {'Gaussian': [], 'Poly-gaussian': []}
+        self.fit_params = {'Gaussian': [], 'Poly-gaussian': [], 'Triplet(gaussian)': []}
         self.fit_func_render_pt_density = 5
+        self.current_units = ''
+
         f = open(file, 'r')
         lines = f.read().split(line_sep)
         self.size = len(lines)-1
@@ -49,13 +61,13 @@ class DataHandler:
             self.lmds.append(float(lne.split(col_sep)[0]))
             self.ints.append(float(lne.split(col_sep)[1]))
         f.close()
-        noise = noise_level * max(self.ints)
+        self.noise = noise_level * max(self.ints)
         # print(max(self.ints))
         for i in range(1, self.size-1):
-            if abs(self.ints[i]) > noise:
+            if abs(self.ints[i]) > self.noise:
                 if (self.ints[i] - self.ints[i-1] > 0) and (self.ints[i+1] - self.ints[i] < 0):
                     self.pk_count += 1
-                    self.peaks.append((i, self.lmds[i], self.ints[i]))  # indexes for peaks are for internal navigation
+                    self.peaks.append([i, self.lmds[i], self.ints[i]])  # indexes for peaks are for internal navigation
 
     def pk_prox(self, pk_num, n):  # pk_num - number of the peak, <= pk_count; N - half of the points around a peak
         return ([self.lmds[i] for i in range(self.peaks[pk_num][0] - n, self.peaks[pk_num][0] + n+1)],
@@ -80,6 +92,20 @@ class DataHandler:
                                 self.fit_params['Gaussian'][3])
         elif fit_type == 'Poly-gaussian':
             pass
+        elif fit_type == 'Triplet(gaussian)':
+            self.fit_params['Triplet(gaussian)'], Rs = curve_fit(triplet_gauss, l_data, i_data,
+                                                        p0=[max(i_data), l_data[(end - begin) // 2], 1,
+                                                            max(i_data), l_data[(end - begin) // 2], 1,
+                                                            max(i_data), l_data[(end - begin) // 2], 1],
+                                                        bounds=([self.noise, l_data[0], 0,
+                                                                 self.noise, l_data[0], 0,
+                                                                 self.noise, l_data[0], 0],
+                                                                [max(i_data), l_data[-1], np.inf,
+                                                                 max(i_data), l_data[-1], np.inf,
+                                                                 max(i_data), l_data[-1], np.inf]))
+            Rs = np.sqrt(np.diag(Rs))
+            fitted_func = triplet_gauss(np.linspace(l_data[0], l_data[-1], (end - begin) * self.fit_func_render_pt_density),
+                                *self.fit_params['Triplet(gaussian)'])
         return Rs, fitted_func
 
     def get_conv_func(self, begin, end, fit_type='Gaussian'):
@@ -100,6 +126,31 @@ class DataHandler:
             pass
         return hw_func
 
+    def change_units(self, new_units):
+        c = 2.9979e10
+        if self.current_units == '':
+            self.current_units = new_units
+            return True
+        else:
+            try:
+                if self.current_units == 'nm' and new_units == 'Hz':
+                    self.lmds = [c/(L*1.0e-7) for L in self.lmds]
+                elif self.current_units == 'Hz' and new_units == 'nm':
+                    self.lmds = [c / L * 1.0e7 for L in self.lmds]
+                elif self.current_units == 'nm' and new_units == 's^-1':
+                    self.lmds = [2 * np.pi * c / (L * 1.0e-7) for L in self.lmds]
+                elif self.current_units == 's^-1' and new_units == 'nm':
+                    self.lmds = [(2*np.pi*c / L)*1.0e7  for L in self.lmds]
+                elif self.current_units == 's^-1' and new_units == 'Hz':
+                    self.lmds = [L/(2*np.pi) for L in self.lmds]
+                elif self.current_units == 'Hz' and new_units == 's^-1':
+                    self.lmds = [L * 2*np.pi for L in self.lmds]
+                self.current_units = new_units
+                for i in range(self.pk_count):
+                    self.peaks[i][1] = self.lmds[self.peaks[i][0]]
+                return True
+            except ZeroDivisionError:
+                return False
 
 def main():
     PK_NUM = 27

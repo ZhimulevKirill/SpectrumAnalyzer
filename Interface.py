@@ -97,6 +97,7 @@ class MainWindow(QMainWindow):
         self.pk_num = 0
         self.pk_vic = 1
         self.repr_type = 0
+        self.symbols = {'nm': '$\\lambda$', 'Hz': '$\\nu$', 's^-1': '$\\omega$'}
         self.initUI()
         self.show()
 
@@ -126,11 +127,12 @@ class MainWindow(QMainWindow):
         load_button.clicked.connect(self.importData)
         load_button.setFixedHeight(25)
         self.filename_label.setStyleSheet("border: 1px solid black")
-        self.cmbox_units.addItems(['nm', 'Hz', 's^-1', 'cm^-1'])
+        self.cmbox_units.addItems(['nm', 'Hz', 's^-1'])
         self.cmbox_units.setCurrentIndex(0)
         self.cmbox_units.setFixedHeight(25)
         self.cmbox_units.setFixedWidth(60)
-        self.cmbox_units.setToolTip('Functionality is not implemented, all data is being taken literally')
+        self.cmbox_units.setToolTip('Reloads the graph in new units')
+        self.cmbox_units.currentTextChanged.connect(self.unitsReload)
         load_settings_button = QPushButton('Settings')
         load_settings_button.setFixedHeight(25)
         load_settings_button.setFixedWidth(60)
@@ -188,7 +190,7 @@ class MainWindow(QMainWindow):
         fitting_label = QLabel('Fitting settings')
         fittype_label = QLabel('Type of fitting function: ')
         fitdata_label = QLabel('Data used for fitting: ')
-        self.cmbox_fittype.addItems(['None', 'Gaussian'])
+        self.cmbox_fittype.addItems(['None', 'Gaussian', 'Triplet(gaussian)'])
         self.cmbox_fitdata.addItems(['None', 'All', 'Current peak'])
         self.cmbox_fittype.setCurrentIndex(0)
         self.cmbox_fitdata.setCurrentIndex(0)
@@ -289,7 +291,7 @@ class MainWindow(QMainWindow):
             self.spbox_pk_num.setMaximum(self.data_handler.pk_count-1)
             self.spbox_pk_vic.setMaximum(min(self.data_handler.peaks[self.pk_num][0],
                                              self.data_handler.size - self.data_handler.peaks[self.pk_num][0] - 1))
-            self.drawGraph()
+            self.unitsReload()
         except FileNotFoundError:
             self.filename_label.setText("ERROR: FileNotFound")
         except Exception as exc:
@@ -299,6 +301,8 @@ class MainWindow(QMainWindow):
     def drawGraph(self):
         self.canvas.axes.cla()
         self.preloadChoice()
+        self.canvas.axes.set_ylabel("$I, усл.ед.$")
+        self.canvas.axes.set_xlabel(self.symbols[self.cmbox_units.currentText()] + ', ' + self.cmbox_units.currentText())
         self.canvas.axes.plot(self.draw_lambda, self.draw_i)
         self.canvas.draw()
         pass
@@ -363,6 +367,11 @@ class MainWindow(QMainWindow):
                 self.canvas.draw()
             except Exception as exc:
                 print(type(exc), exc.args)
+
+    def unitsReload(self):
+        self.data_handler.change_units(self.cmbox_units.currentText())
+        self.drawGraph()
+        pass
 
 
 if __name__ == '__main__':
