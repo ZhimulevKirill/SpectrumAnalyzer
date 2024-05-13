@@ -190,7 +190,7 @@ class MainWindow(QMainWindow):
         fitting_label = QLabel('Fitting settings')
         fittype_label = QLabel('Type of fitting function: ')
         fitdata_label = QLabel('Data used for fitting: ')
-        self.cmbox_fittype.addItems(['None', 'Gaussian', 'Triplet(gaussian)'])
+        self.cmbox_fittype.addItems(['None', 'Gaussian', 'Doublet(gaussian)', 'Triplet(gaussian)', 'Quadruplet(gaussian)'])
         self.cmbox_fitdata.addItems(['None', 'All', 'Current peak'])
         self.cmbox_fittype.setCurrentIndex(0)
         self.cmbox_fitdata.setCurrentIndex(0)
@@ -281,7 +281,7 @@ class MainWindow(QMainWindow):
     def importData(self):
         self.getFileName()
         try:
-            self.data_handler = DataHandler(self.file_name, 0.03,
+            self.data_handler = DataHandler(self.file_name, 0.01,
                                             line_sep=self.line_separator,
                                             col_sep=self.column_separator,
                                             dec_pt=self.decimal_point)

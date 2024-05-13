@@ -9,15 +9,22 @@ def gauss(x, A_0, x_0, sigma, delta):
     return np.add((A_0/(sigma*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_0)/sigma)**2/2), delta)
 
 
-def double_gauss(x, A_1, A_2, x_1, x_2, s1, s2):
-    return (A_1/(s1*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_1)/s1)**2/2) + \
-           (A_2/(s2*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_2)/s2)**2/2)
+def doublet_gauss(x, A_1, x_1, s_1, A_2, x_2, s_2):
+    return (A_1/(s_1*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_1)/s_1)**2/2) + \
+           (A_2/(s_2*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_2)/s_2)**2/2)
 
 
 def triplet_gauss(x, A_1, x_1, s_1, A_2, x_2, s_2, A_3, x_3, s_3):  # todo add delta, as with regular gaussian
     return (A_1/(s_1*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_1)/s_1)**2/2) + \
            (A_2/(s_2*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_2)/s_2)**2/2) + \
            (A_3/(s_3*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_3)/s_3)**2/2)
+
+
+def quadruplet_gauss(x, A_1, x_1, s_1, A_2, x_2, s_2, A_3, x_3, s_3, A_4, x_4, s_4):
+    return (A_1/(s_1*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_1)/s_1)**2/2) + \
+           (A_2/(s_2*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_2)/s_2)**2/2) + \
+           (A_3/(s_3*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_3)/s_3)**2/2) + \
+           (A_4/(s_4*np.sqrt(2*math.pi)))*np.exp(-1*((x-x_4)/s_4)**2/2)
 
 
 def fitparams_textout(params, params_sigma, fit_type):  # todo make print out a formula using LaTeX symbols
@@ -30,12 +37,18 @@ def fitparams_textout(params, params_sigma, fit_type):  # todo make print out a 
             ';<br>\u03c3 = ' + '{:.3f}'.format(params[2]) + ';  err = ' + '{:.4f}'.format(params_sigma[2]) + \
             ';<br>(HWHM = ' + '{:.3f}'.format(2*math.sqrt(2*math.log(2)) * params[2]) + ');' + \
             '<br>\u03b4 = ' + '{:.3f}'.format(params[3]) + ';  err = ' + '{:.4f}'.format(params_sigma[3])
-    elif fit_type == 'Double Gaussian':
-        return ''
+    elif fit_type == 'Doublet(gaussian)':
+        return 'A<sub>i</sub> = ' + '({:.3f}, {:.3f})'.format(params[0], params[3]) + \
+               ';<br>x<sub>0</sub> = ' + '({:.3f}, {:.3f})'.format(params[1], params[4]) + \
+               ';<br>\u03c3<sub>i</sub> = ' + '({:.3f}, {:.3f})'.format(params[2], params[5])
     elif fit_type == 'Triplet(gaussian)':
         return 'A<sub>i</sub> = ' + '({:.3f}, {:.3f}, {:.3f})'.format(params[0], params[3], params[6]) + \
                ';<br>x<sub>0</sub> = ' + '({:.3f}, {:.3f}, {:.3f})'.format(params[1], params[4], params[7]) + \
                ';<br>\u03c3<sub>i</sub> = ' + '({:.3f}, {:.3f}, {:.3f})'.format(params[2], params[5], params[8])
+    elif fit_type == 'Quadruplet(gaussian)':
+        return 'A<sub>i</sub> = ' + '({:.3f}, {:.3f}, {:.3f}, {:.3f})'.format(params[0], params[3], params[6], params[9]) + \
+               ';<br>x<sub>0</sub> = ' + '({:.3f}, {:.3f}, {:.3f}, {:.3f})'.format(params[1], params[4], params[7], params[10]) + \
+               ';<br>\u03c3<sub>i</sub> = ' + '({:.3f}, {:.3f}, {:.3f}, {:.3f})'.format(params[2], params[5], params[8], params[11])
     else:
         return 'error'
 
@@ -49,7 +62,7 @@ class DataHandler:
         self.pk_count = 0
         self.peaks = []
         self.fitting = [[], []]  # first array - lambdas, second - intensities
-        self.fit_params = {'Gaussian': [], 'Poly-gaussian': [], 'Triplet(gaussian)': []}
+        self.fit_params = {'Gaussian': [], 'Doublet(gaussian)': [], 'Triplet(gaussian)': [], 'Quadruplet(gaussian)': []}
         self.fit_func_render_pt_density = 5
         self.current_units = ''
 
@@ -86,12 +99,18 @@ class DataHandler:
                                                         bounds=([0, -np.inf, 0, -np.inf], [np.inf, np.inf, np.inf, np.inf]))
             Rs = np.sqrt(np.diag(Rs))
             fitted_func = gauss(np.linspace(l_data[0], l_data[-1], (end-begin)*self.fit_func_render_pt_density),
-                                self.fit_params['Gaussian'][0],
-                                self.fit_params['Gaussian'][1],
-                                self.fit_params['Gaussian'][2],
-                                self.fit_params['Gaussian'][3])
-        elif fit_type == 'Poly-gaussian':
-            pass
+                                *self.fit_params['Gaussian'])
+        elif fit_type == 'Doublet(gaussian)':
+            self.fit_params['Doublet(gaussian)'], Rs = curve_fit(doublet_gauss, l_data, i_data,
+                                                                 p0=[max(i_data), l_data[(end - begin) // 2], 1,
+                                                                     max(i_data), l_data[(end - begin) // 2], 1],
+                                                                 bounds=([self.noise, l_data[0], 0,
+                                                                          self.noise, l_data[0], 0],
+                                                                         [max(i_data), l_data[-1], np.inf,
+                                                                          max(i_data), l_data[-1], np.inf]))
+            Rs = np.sqrt(np.diag(Rs))
+            fitted_func = doublet_gauss(np.linspace(l_data[0], l_data[-1], (end-begin)*self.fit_func_render_pt_density),
+                                        *self.fit_params['Doublet(gaussian)'])
         elif fit_type == 'Triplet(gaussian)':
             self.fit_params['Triplet(gaussian)'], Rs = curve_fit(triplet_gauss, l_data, i_data,
                                                         p0=[max(i_data), l_data[(end - begin) // 2], 1,
@@ -104,8 +123,25 @@ class DataHandler:
                                                                  max(i_data), l_data[-1], np.inf,
                                                                  max(i_data), l_data[-1], np.inf]))
             Rs = np.sqrt(np.diag(Rs))
-            fitted_func = triplet_gauss(np.linspace(l_data[0], l_data[-1], (end - begin) * self.fit_func_render_pt_density),
-                                *self.fit_params['Triplet(gaussian)'])
+            fitted_func = triplet_gauss(np.linspace(l_data[0], l_data[-1], (end-begin)*self.fit_func_render_pt_density),
+                                        *self.fit_params['Triplet(gaussian)'])
+        elif fit_type == 'Quadruplet(gaussian)':
+            self.fit_params['Quadruplet(gaussian)'], Rs = curve_fit(quadruplet_gauss, l_data, i_data,
+                                                                 p0=[max(i_data), l_data[(end - begin) // 2], 1,
+                                                                     max(i_data), l_data[(end - begin) // 2], 1,
+                                                                     max(i_data), l_data[(end - begin) // 2], 1,
+                                                                     max(i_data), l_data[(end - begin) // 2], 1],
+                                                                 bounds=([self.noise, l_data[0], 0,
+                                                                          self.noise, l_data[0], 0,
+                                                                          self.noise, l_data[0], 0,
+                                                                          self.noise, l_data[0], 0],
+                                                                         [max(i_data), l_data[-1], np.inf,
+                                                                          max(i_data), l_data[-1], np.inf,
+                                                                          max(i_data), l_data[-1], np.inf,
+                                                                          max(i_data), l_data[-1], np.inf]))
+            Rs = np.sqrt(np.diag(Rs))
+            fitted_func = quadruplet_gauss(np.linspace(l_data[0], l_data[-1], (end-begin)*self.fit_func_render_pt_density),
+                                           *self.fit_params['Quadruplet(gaussian)'])
         return Rs, fitted_func
 
     def get_conv_func(self, begin, end, fit_type='Gaussian'):
