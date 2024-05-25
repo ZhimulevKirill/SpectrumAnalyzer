@@ -151,10 +151,7 @@ class DataHandler:
         if fit_type == 'None':
             pass
         elif fit_type == 'Gaussian':
-            fitted_func = gauss(l_data, self.fit_params['Gaussian'][0],
-                                        self.fit_params['Gaussian'][1],
-                                        self.fit_params['Gaussian'][2],
-                                        self.fit_params['Gaussian'][3])
+            fitted_func = gauss(l_data, *self.fit_params['Gaussian'])
             fourier_data = fft(i_data)
             fourier_func = fft(fitted_func)
             hw_func = np.asarray(ifft(np.divide(fourier_data, fourier_func)), float)
